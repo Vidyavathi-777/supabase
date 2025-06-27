@@ -9,8 +9,9 @@ const Signup = () => {
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(false)
-  const [step, setStep] = useState(1) // 1: signup form, 2: OTP verification
+  const [step, setStep] = useState(1) 
   const [resendLoading, setResendLoading] = useState(false)
+  const [signupData, setSignupData] = useState(null) 
 
   const { signUpUser, verifyOtp, resendOtp } = UserAuth()
   const navigate = useNavigate()
@@ -24,6 +25,7 @@ const Signup = () => {
     try {
       const result = await signUpUser(email, password)
       if (result.success) {
+        setSignupData(result) 
         setStep(2)
         setMessage('Please check your email for the verification code.')
       } else {
@@ -43,7 +45,8 @@ const Signup = () => {
     setMessage('')
 
     try {
-      const result = await verifyOtp(email, otp)
+      // Pass the password to set it after OTP verification
+      const result = await verifyOtp(email, otp, password)
       if (result.success) {
         setMessage('Email verified successfully! Redirecting...')
         setTimeout(() => {
@@ -83,6 +86,7 @@ const Signup = () => {
     setOtp('')
     setError('')
     setMessage('')
+    setSignupData(null)
   }
 
   if (step === 2) {
@@ -177,7 +181,7 @@ const Signup = () => {
           />
           <input
             onChange={(e) => setPassword(e.target.value)}
-            type="password"
+            type="text"
             value={password}
             placeholder="Password (min. 6 characters)"
             required
@@ -190,7 +194,7 @@ const Signup = () => {
             disabled={loading}
             className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed transition duration-200"
           >
-            {loading ? 'Creating account...' : 'Create Account'}
+            {loading ? 'Sending verification code...' : 'Create Account'}
           </button>
           {message && <p className="text-green-600 text-center text-sm">{message}</p>}
           {error && <p className="text-red-600 text-center text-sm">{error}</p>}

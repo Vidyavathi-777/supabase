@@ -1,133 +1,167 @@
-import { createContext,useEffect,useContext, Children, useState } from "react";
+import { createContext, useEffect, useContext, useState } from "react";
 import { supabase } from "./supabaseClient";
-import { data } from "react-router-dom";
 
-const Authcontext = createContext()
+const AuthContext = createContext();
 
-export const AuthContextProvider = ({children}) =>{
-    const [session,setSession] = useState(undefined)
-
-    const signUpUser = async(email,password) =>{
-        const {data,error} = await supabase.auth.signUp({
-            email: email,
-            password: password,
-            options:{
-                emailRedirectTo:undefined
-            }
-        })
-        if(error){
-            console.error(`There is a problem in Signin up: ${error}`)
-            return {success:false,error:error.message}
-        }
-        return{success:true,data}
-    }
-      const verifyOtp = async (email, token) => {
-        try {
-            const { data, error } = await supabase.auth.verifyOtp({
-                email: email,
-                token: token,
-                type: 'signup'
-            })
-            if (error) {
-                console.error("OTP verification error:", error)
-                return { success: false, error: error.message }
-            }
-            console.log("Email verification successful", data)
-            return { success: true, data }
-        } catch (error) {
-            console.error("Unexpected error during OTP verification:", error)
-            return { success: false, error: "An unexpected error occurred" }
-        }
-    }
-
-    const resendOtp = async (email) => {
-        try {
-            const { error } = await supabase.auth.resend({
-                type: 'signup',
-                email: email
-            })
-            if (error) {
-                console.error("Resend OTP error:", error)
-                return { success: false, error: error.message }
-            }
-            return { success: true }
-        } catch (error) {
-            console.error("Unexpected error during resend OTP:", error)
-            return { success: false, error: "An unexpected error occurred" }
-        }
-    }
-
-
-    const signInUser = async(email,password) =>{
-        try {
-            const {data,error} = await supabase.auth.signInWithPassword({
-                email:email,
-                password:password
-            })
-            if(error){
-                console.error("sign in error,",error)
-                return {success:false,error:error.message}
-            }
-            console.log("sign-in successfull",data)
-            return{success:true,data}
-        } catch (error) {
-            console.error("an error occured:",error)
-            
-        }
-    }
-       const resetPassword = async (email) => {
-        try {
-            const { error } = await supabase.auth.resetPasswordForEmail(email, {
-                redirectTo: `${window.location.origin}/update-password`
-            })
-            if (error) {
-                return { success: false, error: error.message }
-            }
-            return { success: true }
-        } catch (error) {
-            console.error("Password reset error:", error)
-            return { success: false, error: "An unexpected error occurred" }
-        }
-    }
-        const updatePassword = async (newPassword) => {
-        try {
-            const { error } = await supabase.auth.updateUser({
-                password: newPassword
-            })
-            if (error) {
-                return { success: false, error: error.message }
-            }
-            return { success: true }
-        } catch (error) {
-            console.error("Password update error:", error)
-            return { success: false, error: "An unexpected error occurred" }
-        }
-    }
+export const AuthContextProvider = ({ children }) => {
+  const [session, setSession] = useState(undefined);
 
   
-    useEffect(() =>{
-        supabase.auth.getSession().then(({data:{session}}) =>{
-            setSession(session)
-        })
-        supabase.auth.onAuthStateChange((_event,session) =>{
-            setSession(session)
-        })
-    },[])
-
-    const signOut = () =>{
-        const {error} = supabase.auth.signOut()
-        if(error){
-            console.error("there was an error," ,error)
+ const signUpUser = async (email) => {
+    try {
+      const { data, error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          shouldCreateUser: true,
+          channel:'email'
         }
+      });
+
+      if (error) return { success: false, error: error.message };
+      return { success: true, data, email };
+    } catch (error) {
+      return { success: false, error: "An unexpected error occurred" };
     }
+  };
 
-    return (
-        <Authcontext.Provider value={{session, signUpUser,signInUser,signOut,resetPassword,updatePassword,verifyOtp,resendOtp}}>
-            {children}
-        </Authcontext.Provider>
-    )
-}
 
-export const UserAuth = () =>{
-    return useContext(Authcontext)
-}
+  
+  const verifyOtp = async (email, token, password ) => {
+    try {
+      const { data, error } = await supabase.auth.verifyOtp({
+        email,
+        token,
+        type: "email",
+      });
+
+      if (error) {
+        console.error("OTP verification failed:", error.message);
+        return { success: false, error: error.message };
+      }
+
+      
+      if (password && data.user) {
+        const { error: pwError } = await supabase.auth.updateUser({ password });
+        if (pwError) {
+          console.error("Password update error:", pwError.message);
+        }
+      }
+
+      console.log("OTP verified successfully:", data);
+      return { success: true, data };
+    } catch (error) {
+      console.error("Unexpected error during OTP verification:", error);
+      return { success: false, error: "An unexpected error occurred" };
+    }
+  };
+
+  
+  const resendOtp = async (email) => {
+    try {
+      const { error } = await supabase.auth.resend({
+        type: "signup",
+        email,
+      });
+
+      if (error) {
+        console.error("Resend OTP error:", error.message);
+        return { success: false, error: error.message };
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error("Unexpected error during resend OTP:", error);
+      return { success: false, error: "An unexpected error occurred" };
+    }
+  };
+
+  
+  const signInUser = async (email, password) => {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        console.error("Sign in error:", error.message);
+        return { success: false, error: error.message };
+      }
+
+      return { success: true, data };
+    } catch (error) {
+      return { success: false, error: "An unexpected error occurred" };
+    }
+  };
+
+  
+  const resetPassword = async (email) => {
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/update-password`,
+      });
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: "An unexpected error occurred" };
+    }
+  };
+
+  
+  const updatePassword = async (newPassword) => {
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: "An unexpected error occurred" };
+    }
+  };
+
+  
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
+
+  }, []);
+
+  const signOut = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        return { success: false, error: error.message };
+      }
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: "An unexpected error occurred" };
+    }
+  };
+
+  return (
+    <AuthContext.Provider
+      value={{
+        session,
+        signUpUser,
+        verifyOtp,
+        resendOtp,
+        signInUser,
+        resetPassword,
+        updatePassword,
+        signOut,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+export const UserAuth = () => useContext(AuthContext);

@@ -79,7 +79,7 @@ const UpdatePassword = () => {
         <h2 className="text-2xl font-bold text-gray-800 mb-4">Update Your Password</h2>
         
         <input
-          type="password"
+          type="text"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           placeholder="New password"
@@ -90,7 +90,7 @@ const UpdatePassword = () => {
         />
         
         <input
-          type="password"
+          type="text"
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
           placeholder="Confirm new password"
