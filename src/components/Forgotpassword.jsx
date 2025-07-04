@@ -15,7 +15,7 @@ const ForgotPassword = () => {
 
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/update-password`
+        redirectTo: 'https://authenticateyou.netlify.app/update-password'
       })
       
       if (error) {
