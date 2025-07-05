@@ -128,17 +128,12 @@ export const AuthContextProvider = ({ children }) => {
   };
 
   
-useEffect(() => {
-  const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-    setSession(session)
-  });
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
 
-  supabase.auth.getSession().then(({ data: { session } }) => {
-    setSession(session)
-  });
-
-  return () => subscription.unsubscribe();
-}, []);
+  }, []);
 
   const signOut = async () => {
     try {
